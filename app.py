@@ -1,39 +1,77 @@
+import os
+import tempfile
+import time
+import json
 from flask import Flask, render_template, request
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
 
 app = Flask(__name__)
 
-def scrape_news():
-    urls = [
-        "https://az.trend.az/",  # nümunə saytlar
-        "https://apa.az/"
-    ]
-    news_results = []
+def driver_exists(driver_name):
+    current_dir = os.path.abspath(os.path.dirname(__file__))
+    driver_path = os.path.join(current_dir, driver_name)
+    return os.path.isfile(driver_path)
 
-    headers = {"User-Agent": "Mozilla/5.0"}
+def get_webdriver():
+    temp_profile = tempfile.mkdtemp()
 
-    for url in urls:
+    if driver_exists("chromedriver.exe"):
+        options = ChromeOptions()
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument(f"--user-data-dir={temp_profile}")
         try:
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "html.parser")
+            service = ChromeService(executable_path="chromedriver.exe")
+            return webdriver.Chrome(service=service, options=options)
+        except Exception as e:
+            print("Chrome driver ilə başlatmaq mümkün olmadı:", e)
 
-            # Sadə nümunə: h2 headline linkləri götürürük
+    raise RuntimeError("Chromedriver tapılmadı!")
+
+def scrape_news():
+    with open("urls.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+        urls = data["urls"]
+
+    driver = get_webdriver()
+    results = []
+
+    try:
+        for url in urls:
+            driver.get(url)
+            time.sleep(7)  # saytın yüklənməsi üçün gözləmə
+
+            selectors = [
+                "h2.headline a",
+                "h3.headline a",
+                "h2 a",
+                "h3 a",
+                "article h2 a",
+                "div h3 a"
+            ]
+
+            elements = []
+            for selector in selectors:
+                elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                if elements:
+                    break
+
             headlines = []
-            for a in soup.select("h2 a, h3 a"):
-                title = a.get_text(strip=True)
-                link = a.get("href")
+            for el in elements:
+                title = el.text.strip()
+                link = el.get_attribute("href")
                 if title and link:
-                    if not link.startswith("http"):
-                        link = url.rstrip("/") + "/" + link.lstrip("/")
                     headlines.append({"title": title, "link": link})
 
-            news_results.append({"url": url, "headlines": headlines})
-        except Exception as e:
-            news_results.append({"url": url, "headlines": [], "error": str(e)})
+            results.append({"url": url, "headlines": headlines})
+    finally:
+        driver.quit()
 
-    return news_results
+    return results
 
 @app.route("/", methods=["GET", "POST"])
 def index():
