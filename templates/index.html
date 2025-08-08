@@ -1,19 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><title>News</title></head>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <title>Xəbərlər</title>
+</head>
 <body>
-  <form method="post">
-    <button type="submit">Get News</button>
-  </form>
+    <form method="post">
+        <button type="submit">Xəbərləri Yüklə</button>
+    </form>
 
-  {% if error %}
-  <p style="color:red;">Error: {{ error }}</p>
-  {% endif %}
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
 
-  <ul>
-    {% for item in news_data %}
-      <li><a href="{{ item.link }}">{{ item.title }}</a></li>
-    {% endfor %}
-  </ul>
+    {% if message %}
+        <p style="color: orange;">{{ message }}</p>
+    {% endif %}
+
+    {% if news_data %}
+        <ul>
+            {% for item in news_data %}
+                <li><a href="{{ item.link }}" target="_blank">{{ item.title }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 </body>
 </html>
