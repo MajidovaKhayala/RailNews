@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8" />
+    <title>Xəbərlər</title>
+</head>
+<body>
+    <h1>Xəbərləri yığmaq</h1>
+    <form method="post">
+        <button type="submit">Xəbərləri gətir</button>
+    </form>
+
+    {% if news_data %}
+        {% for site in news_data %}
+            <h2>Sayt: {{ site.url }}</h2>
+            {% if site.error %}
+                <p style="color:red;">Xəta: {{ site.error }}</p>
+            {% else %}
+                <ul>
+                    {% for news in site.headlines %}
+                        <li><a href="{{ news.link }}" target="_blank">{{ news.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</body>
+</html>
