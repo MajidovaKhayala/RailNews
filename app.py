@@ -8,9 +8,10 @@ app = Flask(__name__)
 def index():
     news_data = []
     error = None
+    message = None
     if request.method == "POST":
         try:
-            url = "https://www.example.com"  # test üçün etibarlı sayt
+            url = "https://www.example.com"  # Test üçün istənilən real sayt yaz
             response = requests.get(url)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
@@ -21,11 +22,15 @@ def index():
                 link = item.get("href")
                 headlines.append({"title": title, "link": link})
 
-            news_data = headlines
-        except Exception as e:
-            error = str(e)
+            if not headlines:
+                message = "Xəbər tapılmadı (empty result). CSS selector-u yoxla."
 
-    return render_template("index.html", news_data=news_data, error=error)
+            news_data = headlines
+
+        except Exception as e:
+            error = f"Xəta baş verdi: {str(e)}"
+
+    return render_template("index.html", news_data=news_data, error=error, message=message)
 
 if __name__ == "__main__":
     app.run(debug=True)
